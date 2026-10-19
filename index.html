@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JARVIS HUD</title>
+  <style>
+    body { background: #0a0a12; color: #00f0ff; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+    #arc-reactor { width: 150px; height: 150px; border-radius: 50%; border: 4px solid #00f0ff; box-shadow: 0 0 30px #00f0ff; display: flex; align-items: center; justify-content: center; cursor: pointer; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { box-shadow: 0 0 15px #00f0ff; } 50% { box-shadow: 0 0 35px #00f0ff; } 100% { box-shadow: 0 0 15px #00f0ff; } }
+    #status { margin-top: 20px; font-size: 1.2rem; text-shadow: 0 0 8px #00f0ff; }
+  </style>
+</head>
+<body>
+
+  <div id="arc-reactor" onclick="startListening()">
+    <span>JARVIS</span>
+  </div>
+  <p id="status">Tap Arc Reactor to Activate</p>
+
+  <script>
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'en-US';
+
+    function speak(text, callback) {
+      document.getElementById('status').innerText = text;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.pitch = 0.9;
+      utterance.rate = 1.0;
+      
+      utterance.onend = () => { if (callback) callback(); };
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function startListening() {
+      speak("Online and listening, Sir.", () => {
+        recognition.start();
+      });
+    }
+
+    recognition.onresult = (event) => {
+      const command = event.results[0][0].transcript.toLowerCase();
+      document.getElementById('status').innerText = `You said: "${command}"`;
+
+      if (command.includes("open spotify") || command.includes("spotify")) {
+        speak("Opening Spotify, Sir.", () => {
+          window.location.href = "spotify://";
+        });
+      } 
+      else if (command.includes("open youtube") || command.includes("youtube")) {
+        speak("Opening YouTube, Sir.", () => {
+          window.location.href = "youtube://";
+        });
+      } 
+      else if (command.includes("open calendar") || command.includes("calendar")) {
+        speak("Opening your schedule, Sir.", () => {
+          window.location.href = "calshow://";
+        });
+      } 
+      else if (command.includes("reminder") || command.includes("remind me")) {
+        speak("Opening Reminders for you, Sir.", () => {
+          window.location.href = "x-apple-reminder://";
+        });
+      } 
+      else {
+        speak(`I heard: ${command}, but I don't have a direct shortcut for that action yet.`);
+      }
+    };
+
+    recognition.onerror = (e) => {
+      speak("Microphone access error. Please grant permission.");
+    };
+  </script>
+</body>
+</html>
