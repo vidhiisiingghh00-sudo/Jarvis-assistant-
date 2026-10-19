@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JARVIS AI HUD</title>
+  <style>
+    body { background: #0a0a12; color: #00f0ff; font-family: 'Courier New', monospace; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; padding: 20px; box-sizing: border-box; text-align: center; }
+    #arc-reactor { width: 150px; height: 150px; border-radius: 50%; border: 4px solid #00f0ff; box-shadow: 0 0 30px #00f0ff; display: flex; align-items: center; justify-content: center; cursor: pointer; animation: pulse 2s infinite; margin-bottom: 20px;}
+    @keyframes pulse { 0% { box-shadow: 0 0 15px #00f0ff; } 50% { box-shadow: 0 0 35px #00f0ff; } 100% { box-shadow: 0 0 15px #00f0ff; } }
+    #status { font-size: 1.1rem; text-shadow: 0 0 8px #00f0ff; max-width: 500px; line-height: 1.5; }
+  </style>
+</head>
+<body>
+
+  <div id="arc-reactor" onclick="startListening()">
+    <span>JARVIS</span>
+  </div>
+  <p id="status">Tap Arc Reactor to Speak with JARVIS</p>
+
+  <script>
+    // PASTE YOUR OPENAI API KEY INSIDE THE QUOTES BELOW:
+    const OPENAI_API_KEY = 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
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.lang = 'en-US';
+
+    function speak(text, callback) {
+      document.getElementById('status').innerText = text;
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.pitch = 0.85; 
+      utterance.rate = 1.0;
+      
+      utterance.onend = () => { if (callback) callback(); };
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function startListening() {
+      speak("Listening, Sir.", () => {
+        recognition.start();
+      });
+    }
+
+    recognition.onresult = async (event) => {
+      const command = event.results[0][0].transcript.toLowerCase();
+      document.getElementById('status').innerText = `You said: "${command}"`;
+
+      if (command.includes("open spotify")) {
+        speak("Opening Spotify, Sir.", () => { window.location.href = "spotify://"; });
+        return;
+      } else if (command.includes("open youtube")) {
+        speak("Opening YouTube, Sir.", () => { window.location.href = "youtube://"; });
+        return;
+      } else if (command.includes("open calendar")) {
+        speak("Opening Calendar, Sir.", () => { window.location.href = "calshow://"; });
+        return;
+      } else if (command.includes("reminder")) {
+        speak("Opening Reminders, Sir.", () => { window.location.href = "x-apple-reminder://"; });
+        return;
+      }
+
+      speak("Processing query, Sir...");
+      
+      try {
+        const response = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${OPENAI_API_KEY}`
+          },
+          body: JSON.stringify({
+            model: "gpt-4o-mini",
+            messages: [
+              { role: "system", content: "You are J.A.R.V.I.S., Tony Stark's hyper-intelligent, witty, and concise AI assistant. Address the user exclusively as 'Sir'. Keep responses short, direct, and under two sentences so they can be spoken aloud easily." },
+              { role: "user", content: command }
+            ]
+          })
+        });
+
+        const data = await response.json();
+        if (data.choices && data.choices.length > 0) {
+          const aiReply = data.choices[0].message.content;
+          speak(aiReply);
+        } else {
+          speak("I encountered an error processing that through my neural net, Sir.");
+        }
+      } catch (error) {
+        speak("Network connection error to my primary servers, Sir.");
+      }
+    };
+
+    recognition.onerror = () => {
+      speak("Microphone error detected.");
+    };
+  </script>
+</body>
+</html>
